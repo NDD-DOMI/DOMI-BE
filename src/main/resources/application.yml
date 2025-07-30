@@ -1,0 +1,19 @@
+server:
+  port: 8080
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_NAME}?allowPublicKeyRetrieval=true&useSSL=false&characterEncoding=UTF-8
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+jwt:
+  secret-key: bW9yZGF0aGVfMzJfYnl0ZXNfbG9uZ19zZWNyZXRfa2V5
+  access-exp: 900000          # 15? (??? ??: 15 * 60 * 1000 = 900,000)
+  refresh-exp: 604800000
