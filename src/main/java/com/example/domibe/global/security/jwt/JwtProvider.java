@@ -1,17 +1,18 @@
 package com.example.domibe.global.security.jwt;
 
-import com.example.domibe.global.security.service.AuthDetailsService;
-
+import com.example.domibe.global.security.auth.CustomUserDetails;
+import com.example.domibe.global.security.auth.CustomUserDetailsService;
+import com.example.domibe.global.security.exception.JwtExpiredException;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import io.jsonwebtoken.Jwts;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-import javax.print.DocFlavor;
 import java.util.Date;
 
 @Slf4j
@@ -20,7 +21,7 @@ import java.util.Date;
 public class JwtProvider {
 
   private final JwtProperties jwtProperties;
-  private final AuthDetailsService authDetailsService;
+  private final CustomUserDetailsService authDetailsService;
   private final static String ACCESS_TOKEN = "access_token";
   private final static String REFRESH_TOKEN = "refresh_token";
 
@@ -43,22 +44,45 @@ public class JwtProvider {
         .setExpiration(new Date(now.getTime()+time))
         .compact();
   }
-  //토큰 파싱 기능
-  public String parseToken(String bearerToken) {
-    if(bearerToken != null && bearerToken.startsWith("Bearer ")) {
-      return bearerToken.replace("Bearer ","");
+
+  //토큰에서 값 가져오기
+  public String resolveToken(HttpServletRequest request) {
+    String bearerToken = request.getHeader("Authorization");
+    if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+      return bearerToken.replace("Bearer ", "");
     }
     return null;
   }
 
-  public String resolveToken(HttpServletRequest request) {
-    String bearerToken = request.getHeader("Authorization");
-    return parseToken(bearerToken);
+  //토큰의 유효성을 감사
+  public boolean validateToken(String token){
+    try {
+      Claims claims = Jwts.parser()
+          .setSigningKey(jwtProperties.getSecretKey())
+          .parseClaimsJws(token)
+          .getBody();
+      return true;
+    }catch (RuntimeException e){
+      System.out.println("Invalid JWT");
+      throw new RuntimeException();
+
+    }
   }
 
-  public UsernamePasswordAuthenticationToken resolveAuthentication(HttpServletRequest request) {
-    UserDetails userDetails=authDetailsService.
+  public UsernamePasswordAuthenticationToken getAuthentication(String token) {
+    Claims claims=getClaims(token);
+    CustomUserDetails customUserDetails=(CustomUserDetails) authDetailsService.loadUserByUsername(claims.getSubject());
+    return new UsernamePasswordAuthenticationToken(customUserDetails,null,customUserDetails.getAuthorities());
   }
 
-
+  private Claims getClaims(String token) {
+    try {
+      return Jwts.parser()
+          .setSigningKey(jwtProperties.getSecretKey())
+          .parseClaimsJws(token)
+          .getBody();
+    } catch (JwtExpiredException e) {
+      throw new JwtExpiredException("토큰이 유효하지 않습니다");
+    }
+  }
 }
