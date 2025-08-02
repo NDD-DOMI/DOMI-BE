@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import io.jsonwebtoken.Jwts;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -18,7 +17,7 @@ import java.util.Date;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class JwtProvider {
+public class JwtTokenProvider {
 
   private final JwtProperties jwtProperties;
   private final CustomUserDetailsService authDetailsService;
